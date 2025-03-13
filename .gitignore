@@ -5,3 +5,11 @@
 *.scm~
 *.scm#*
 .#*.scm
+
+Thumbs.db
+.DS_Store
+.vscode/
+main.dSYM/
+
+*.rkt~
+*.rkt#2#
