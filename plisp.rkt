@@ -110,10 +110,9 @@
     ))
 
 ; -------------------------------------
+; an evaluator written in Scheme for plisp
 
 (define (atom? x) (not (pair? x)))
-
-(define list (lambda x x))
 
 (define (assoclist keys values)
   (cond ((or (null? keys) (null? values)) '())
@@ -181,14 +180,14 @@
      (apply_ (car form) (cdr form) env))))
 
 ; -------------------------------------
-
 ; complete self-embedding
-;
+
 (define plisp-pair '(plisp))
 (set! plisp (cons plisp-pair plisp))
 (set-cdr! plisp-pair plisp)
 
 ; -------------------------------------
+; "pseudo interpretor" functions
 
 ; the global environment list '*env*'
 ;
