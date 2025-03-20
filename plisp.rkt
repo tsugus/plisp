@@ -1,5 +1,7 @@
 #lang sicp
 
+; The meta-circular pure LISP program 'plisp'
+;
 (define plisp
   '(
     (caar . (lambda (x) (car (car x))))
@@ -110,7 +112,7 @@
     ))
 
 ; -------------------------------------
-; an evaluator written in Scheme for plisp
+; An evaluator written in Scheme for plisp
 
 (define (atom? x) (not (pair? x)))
 
@@ -180,20 +182,20 @@
      (apply_ (car form) (cdr form) env))))
 
 ; -------------------------------------
-; complete self-embedding
+; Complete self-embedding
 
 (define plisp-pair '(plisp))
 (set! plisp (cons plisp-pair plisp))
 (set-cdr! plisp-pair plisp)
 
 ; -------------------------------------
-; "pseudo interpretor" functions
+; "Pseudo interpretor" functions
 
-; the global environment list '*env*'
+; The global environment list '*env*'
 ;
 (define *env* plisp)
 
-; add (x . y) to *env*
+; Add (x . y) to *env*.
 ;
 (define (<< x y)
   (let ()
@@ -201,11 +203,11 @@
     (set-cdr! plisp-pair *env*)
     x))
 
-; eval x on *env*
+; Eval x on *env*.
 ;
 (define (>> x) (eval_ x *env*))
 
-; reset *env
+; Reset *env.
 ;
 (define (reset!)
   (let ()
