@@ -1,6 +1,6 @@
 #lang sicp
 
-; The meta-circular pure LISP program 'plisp'
+; A meta-circular pure LISP program 'plisp'
 ;
 (define plisp
   '(
@@ -22,18 +22,17 @@
     (null
      . (lambda (x) (eq x '())))
     (not
-     . (lambda (x) (cond (x '())
-                         (t 't))))
+     . (lambda (x)
+         (cond (x '()) (t 't))))
     (and
      . (lambda (x y)
-         (cond ((null x) '())
-               (t (cond (y 't)
-                        (t '()))))))
+         (cond (x y) (t '()))))
     (or
      . (lambda (x y)
-         (cond (x 't)
-               (t (cond ((null y) '())
-                        (t 't))))))
+         (cond (x 't) (t y))))
+    (imply
+     . (lambda (x y)
+         (cond (x y) (t 't))))
     (rev-append
      . (lambda (x y)
          (cond ((null x) y)
@@ -50,9 +49,12 @@
                       (assoclist (cdr keys) (cdr values))))
                ((not (null keys))
                 (list (cons keys values))))))
+    ; (error
+    ;  . (lambda (err-code s-exp)
+    ;      (Return a nil with outputing an error code and a S-expression.)))
     (assoc
      . (lambda (key lst)
-         (cond ((null lst) '())
+         (cond ((null lst) (error '1 key))
                ((eq key (caar lst)) (cdar lst))
                (t (assoc key (cdr lst))))))
     (isSUBR
@@ -62,7 +64,8 @@
                ((eq x 'car) 't)
                ((eq x 'cdr) 't)
                ((eq x 'cons) 't)
-               ((eq x 'eval) 't)
+               ((eq x 'eval) 't)  ; "bypass"
+               ((eq x 'error) 't)
                (t '()))))
     (evcond
      . (lambda (clauses env)
@@ -90,7 +93,8 @@
               ((eq func 'cdr) (cdr (car args)))
               ((eq func 'cons) (cons (car args) (cadr args)))
               ((eq func 'cond) (evcond args env))
-              ((eq func 'eval) (eval (car args) (cadr args)))
+              ((eq func 'eval) (eval (car args) (cadr args)))  ; "bypass"
+              ((eq func 'error) (error (car args) (cadr args)))
               (t (eval (cons (assoc func env) args) env))))
            ((eq (car func) 'label)
             (eval (cons (caddr func) args)
@@ -98,7 +102,8 @@
            ((eq (car func) 'lambda)
             (eval (caddr func)
                   (append (assoclist (cadr func) (evlist args env))
-                          env))))))
+                          env)))
+           (t (error '2 (cons func args))))))
     (eval
      . (lambda (form env)
          (cond
@@ -124,8 +129,17 @@
         ((not (null? keys))
          (list (cons keys values)))))
 
+(define (error err-code s-exp)
+  (cond ((eqv? err-code 1) (display "Not found"))
+        ((eqv? err-code 2) (display "Invalid form"))
+        (else (display "Error")))
+  (display ": ")
+  (display s-exp)
+  (newline)
+  '())
+
 (define (assoc_ key lst)
-  (cond ((null? lst) '())
+  (cond ((null? lst) (error '1 key))
         ((eq? key (caar lst)) (cdar lst))
         (else (assoc_ key (cdr lst)))))
 
@@ -135,6 +149,7 @@
         ((eq? x 'car) #t)
         ((eq? x 'cdr) #t)
         ((eq? x 'cons) #t)
+        ((eq? x 'error) #t)
         (else #f)))
 
 (define (evcond clauses env)
@@ -155,13 +170,15 @@
        ((eq? func 'quote) (car args))
        ((eq? func 'atom) (cond ((atom? (car args)) 't)
                                (else '())))
-       ((eq? func 'eq) (cond
-                         ((eq? (car args) (cadr args)) 't)
-                         (else '())))
-       ((eq? func 'car) (car (car args)))
-       ((eq? func 'cdr) (cdr (car args)))
+       ((eq? func 'eq) (cond ((eq? (car args) (cadr args)) 't)
+                             (else '())))
+       ((eq? func 'car) (cond ((null? (car args)) '())
+                              (else (car (car args)))))
+       ((eq? func 'cdr) (cond ((null? (car args)) '())
+                              (else (cdr (car args)))))
        ((eq? func 'cons) (cons (car args) (cadr args)))
        ((eq? func 'cond) (evcond args env))
+       ((eq? func 'error) (error (car args) (cadr args)))
        (else (eval_ (cons (assoc_ func env) args) env))))
     ((eq? (car func) 'label)
      (eval_ (cons (caddr func) args)
@@ -169,7 +186,8 @@
     ((eq? (car func) 'lambda)
      (eval_ (caddr func)
             (append (assoclist (cadr func) (evlist args env))
-                    env)))))
+                    env)))
+    (eval (error '2 (cons func args)))))
 
 (define (eval_ form env)
   (cond
@@ -230,6 +248,7 @@
 
 ; Ex. 2
 ;
+
 (>> '(eval '(eval '(eval '(reverse2 '(a b c d)) plisp) plisp) plisp))
 
 ; Ex. 3
@@ -238,3 +257,9 @@
 (reset!)
 (>> '(eval '(eval '(eval 'reverse2 plisp) plisp) plisp))
 (>> '(eval '(eval '(eval '(cddr '(a b c d)) plisp) plisp) plisp))
+
+
+(>> '(eval 'xxx plisp))
+; (>> '(()))
+(>> '(eval '(()) plisp))
+(>> '(eval '(xxx) plisp))
