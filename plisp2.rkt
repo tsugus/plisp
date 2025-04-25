@@ -22,18 +22,17 @@
     (null
      . (lambda (x) (eq x '())))
     (not
-     . (lambda (x) (cond (x '())
-                         (t 't))))
+     . (lambda (x)
+         (cond (x '()) (t 't))))
     (and
      . (lambda (x y)
-         (cond ((null x) '())
-               (t (cond (y 't)
-                        (t '()))))))
+         (cond (x y) (t '()))))
     (or
      . (lambda (x y)
-         (cond (x 't)
-               (t (cond ((null y) '())
-                        (t 't))))))
+         (cond (x 't) (t y))))
+    (imply
+     . (lambda (x y)
+         (cond (x y) (t 't))))
     (rev-append
      . (lambda (x y)
          (cond ((null x) y)
