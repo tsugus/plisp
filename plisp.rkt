@@ -233,10 +233,10 @@
     (set-cdr! plisp-pair plisp)
     't))
 
-; ---------------------------------------
+; -------------------------------------
+;; Test 1
+'Test_1
 
-; Ex. 1
-;
 (<< 'reverse2
     '(lambda (x)
        ((label
@@ -246,20 +246,98 @@
                  (t (rec (cdr x) (cons (car x) y))))))
         x '())))
 
-; Ex. 2
-;
-
 (>> '(eval '(eval '(eval '(reverse2 '(a b c d)) plisp) plisp) plisp))
-
-; Ex. 3
-;
 (>> '(eval '(eval '(eval 'reverse2 plisp) plisp) plisp))
 (reset!)
 (>> '(eval '(eval '(eval 'reverse2 plisp) plisp) plisp))
 (>> '(eval '(eval '(eval '(cddr '(a b c d)) plisp) plisp) plisp))
 
+; -------------------------------------
+;; Redefine
 
-(>> '(eval 'xxx plisp))
-; (>> '(()))
-(>> '(eval '(()) plisp))
-(>> '(eval '(xxx) plisp))
+(<< 'isSUBR
+    '(lambda (x)
+       (cond ((eq x 'atom) 't)
+             ((eq x 'eq) 't)
+             ((eq x 'car) 't)
+             ((eq x 'cdr) 't)
+             ((eq x 'cons) 't)
+             ((eq x 'eval) 't)
+             ((eq x 'apply) 't)
+             ((eq x 'error) 't)
+             (t '()))))
+
+(<< 'apply
+    '(lambda (func args env)
+       (cond
+         ((and (atom func) (not (null func)))
+          (cond
+            ((eq func 'quote) (car args))
+            ((eq func 'atom) (cond ((atom (car args)) 't)
+                                   (t '())))
+            ((eq func 'eq) (cond
+                             ((eq (car args) (cadr args)) 't)
+                             (t '())))
+            ((eq func 'car) (car (car args)))
+            ((eq func 'cdr) (cdr (car args)))
+            ((eq func 'cons) (cons (car args) (cadr args)))
+            ((eq func 'cond) (evcond args env))
+            ((eq func 'eval) (eval (car args) (cadr args)))
+            ((eq func 'apply) (apply (car args) (cadr args) env))
+            ((eq func 'function) (list 'funarg (car args) env))
+            ((eq func 'funarg) (cons func args))
+            ((eq func 'error) (error (car args) (cadr args)))
+            (t (eval (cons (assoc func env) args) env))))
+         ((eq (car func) 'label)
+          (eval (cons (caddr func) args)
+                (cons (cons (cadr func) (caddr func)) env)))
+         ((eq (car func) 'funarg)
+          (apply (cadr func) args (caddr func)))
+         ((eq (car func) 'lambda)
+          (eval (caddr func)
+                (append (assoclist (cadr func) args) env)))
+         (t (error '2 (cons func args))))))
+
+(<< 'eval
+    '(lambda (form env)
+       (cond
+         ((eq form 't) 't)
+         ((eq form '()) '())
+         ((atom form) (assoc form env))
+         ((or (isSUBR (car form))
+              (cond ((not (or (atom (car form)) (null (car form))))
+                     (or (eq (caar form) 'funarg)
+                         (eq (caar form) 'lambda)))))
+          (apply (car form) (evlist (cdr form) env) env))
+         (t
+          (apply (car form) (cdr form) env)))))
+
+; -------------------------------------
+; Z-combinator
+
+(<< 'funcall
+    '(lambda (f . x) (apply f x)))
+
+(<< 'z-combi
+    '(lambda (f)
+       (funcall
+        (function (lambda (y) (f (function (lambda x (apply (y y) x))))))
+        (function (lambda (y) (f (function (lambda x (apply (y y) x)))))))))
+
+; -------------------------------------
+;; Test 2
+'Test_2
+
+(<< 'reverse_z
+    '(lambda (l)
+       (funcall
+        (z-combi
+         (function (lambda (f)
+                     (function (lambda (l acc)
+                                 (cond
+                                   ((eq '() l) acc)
+                                   (t (f (cdr l)
+                                         (cons (car l) acc)))))))))
+        l '())))
+
+(>> '(eval '(reverse_z '(1 2 3 4 5 6 7 8 9 10)) plisp))
