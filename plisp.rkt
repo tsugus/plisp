@@ -243,11 +243,11 @@
            (cond ((null x) y)
                  (t (rec (cdr x) (cons (car x) y))))))
         x '())))
-(>> '(eval '(eval '(reverse2 '(a b c d)) plisp) plisp))
-(>> '(eval '(eval 'reverse2 plisp) plisp))
+(>> '(eval '(reverse2 '(1 2 3 4 5 6 7 8 9 10)) plisp))
+(>> '(eval 'reverse2 plisp))
 (reset!)
-(>> '(eval '(eval 'reverse2 plisp) plisp))
-(>> '(eval '(eval '(cddr '(a b c d)) plisp) plisp))
+(>> '(eval 'reverse2 plisp))
+(>> '(eval '(cddr '(a b c d e)) plisp))
 
 ; -------------------------------------
 ;; Redefine
