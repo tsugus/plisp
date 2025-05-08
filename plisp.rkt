@@ -64,7 +64,6 @@
                ((eq x 'car) 't)
                ((eq x 'cdr) 't)
                ((eq x 'cons) 't)
-               ((eq x 'eval) 't)  ; "bypass"
                ((eq x 'error) 't)
                (t '()))))
     (evcond
@@ -93,7 +92,6 @@
               ((eq func 'cdr) (cdr (car args)))
               ((eq func 'cons) (cons (car args) (cadr args)))
               ((eq func 'cond) (evcond args env))
-              ((eq func 'eval) (eval (car args) (cadr args)))  ; "bypass"
               ((eq func 'error) (error (car args) (cadr args)))
               (t (eval (cons (assoc func env) args) env))))
            ((eq (car func) 'label)
@@ -233,7 +231,7 @@
     (set-cdr! plisp-pair plisp)
     't))
 
-; -------------------------------------
+; =====================================
 ;; Test 1
 'Test_1
 
@@ -245,12 +243,11 @@
            (cond ((null x) y)
                  (t (rec (cdr x) (cons (car x) y))))))
         x '())))
-
-(>> '(eval '(eval '(eval '(reverse2 '(a b c d)) plisp) plisp) plisp))
-(>> '(eval '(eval '(eval 'reverse2 plisp) plisp) plisp))
+(>> '(eval '(eval '(reverse2 '(a b c d)) plisp) plisp))
+(>> '(eval '(eval 'reverse2 plisp) plisp))
 (reset!)
-(>> '(eval '(eval '(eval 'reverse2 plisp) plisp) plisp))
-(>> '(eval '(eval '(eval '(cddr '(a b c d)) plisp) plisp) plisp))
+(>> '(eval '(eval 'reverse2 plisp) plisp))
+(>> '(eval '(eval '(cddr '(a b c d)) plisp) plisp))
 
 ; -------------------------------------
 ;; Redefine
@@ -339,5 +336,4 @@
                                    (t (f (cdr l)
                                          (cons (car l) acc)))))))))
         l '())))
-
 (>> '(eval '(reverse_z '(1 2 3 4 5 6 7 8 9 10)) plisp))
