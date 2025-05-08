@@ -114,8 +114,8 @@
             (apply (car form) (cdr form) env)))))
     ))
 
-; -------------------------------------
-; An evaluator written in Scheme for plisp
+; =====================================
+;; An evaluator written in Scheme for plisp
 
 (define (atom? x) (not (pair? x)))
 
@@ -198,25 +198,18 @@
      (apply_ (car form) (cdr form) env))))
 
 ; -------------------------------------
-; Complete self-embedding
-
-(define plisp-pair '(plisp))
-(set! plisp (cons plisp-pair plisp))
-(set-cdr! plisp-pair plisp)
-
-; -------------------------------------
-; "Pseudo interpretor" functions
+;; "Pseudo interpretor" functions
 
 ; The global environment list '*env*'
 ;
-(define *env* plisp)
+(define *env* (cons (cons '*env* plisp) plisp))
 
 ; Add (x . y) to *env*.
 ;
 (define (<< x y)
   (let ()
-    (set! *env* (cons (cons x y) *env*))
-    (set-cdr! plisp-pair *env*)
+    (set-cdr! *env* (cons (cons x y) (cdr *env*)))
+    (set-cdr! (car *env*) (cdr *env*))
     x))
 
 ; Eval x on *env*.
@@ -227,8 +220,8 @@
 ;
 (define (reset!)
   (let ()
-    (set! *env* plisp)
-    (set-cdr! plisp-pair plisp)
+    (set-cdr! *env* plisp)
+    (set-cdr! (car *env*) plisp)
     't))
 
 ; =====================================
@@ -243,11 +236,11 @@
            (cond ((null x) y)
                  (t (rec (cdr x) (cons (car x) y))))))
         x '())))
-(>> '(eval '(reverse2 '(1 2 3 4 5 6 7 8 9 10)) plisp))
-(>> '(eval 'reverse2 plisp))
+(>> '(eval '(reverse2 '(1 2 3 4 5 6 7 8 9 10)) *env*))
+(>> '(eval 'reverse2 *env*))
 (reset!)
-(>> '(eval 'reverse2 plisp))
-(>> '(eval '(cddr '(a b c d e)) plisp))
+(>> '(eval 'reverse2 *env*))
+(>> '(eval '(cddr '(a b c d e)) *env*))
 
 ; -------------------------------------
 ;; Redefine
@@ -310,7 +303,7 @@
           (apply (car form) (cdr form) env)))))
 
 ; -------------------------------------
-; Z-combinator
+;; Z-combinator
 
 (<< 'funcall
     '(lambda (f . x) (apply f x)))
@@ -336,4 +329,7 @@
                                    (t (f (cdr l)
                                          (cons (car l) acc)))))))))
         l '())))
-(>> '(eval '(reverse_z '(1 2 3 4 5 6 7 8 9 10)) plisp))
+(>> '(eval '(reverse_z '(1 2 3 4 5 6 7 8 9 10)) *env*))
+
+; -------------------------------------
+(reset!)
