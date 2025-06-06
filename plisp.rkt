@@ -103,15 +103,15 @@
                           env)))
            (t (error '2 (cons func args))))))
     (eval
-     . (lambda (form env)
+     . (lambda (exp env)
          (cond
-           ((eq form 't) 't)
-           ((eq form '()) '())
-           ((atom form) (assoc form env))
-           ((isSUBR (car form))
-            (apply (car form) (evlist (cdr form) env) env))
+           ((eq exp 't) 't)
+           ((eq exp '()) '())
+           ((atom exp) (assoc exp env))
+           ((isSUBR (car exp))
+            (apply (car exp) (evlist (cdr exp) env) env))
            (t
-            (apply (car form) (cdr form) env)))))
+            (apply (car exp) (cdr exp) env)))))
     ))
 
 ; =====================================
@@ -187,15 +187,15 @@
                     env)))
     (eval (error '2 (cons func args)))))
 
-(define (eval_ form env)
+(define (eval_ exp env)
   (cond
-    ((eq? form 't) 't)
-    ((eq? form '()) '())
-    ((atom? form) (assoc_ form env))
-    ((isSUBR? (car form))
-     (apply_ (car form) (evlist (cdr form) env) env))
+    ((eq? exp 't) 't)
+    ((eq? exp '()) '())
+    ((atom? exp) (assoc_ exp env))
+    ((isSUBR? (car exp))
+     (apply_ (car exp) (evlist (cdr exp) env) env))
     (else
-     (apply_ (car form) (cdr form) env))))
+     (apply_ (car exp) (cdr exp) env))))
 
 ; -------------------------------------
 ;; "Pseudo interpretor" functions
@@ -289,18 +289,18 @@
          (t (error '2 (cons func args))))))
 
 (<< 'eval
-    '(lambda (form env)
+    '(lambda (exp env)
        (cond
-         ((eq form 't) 't)
-         ((eq form '()) '())
-         ((atom form) (assoc form env))
-         ((or (isSUBR (car form))
-              (cond ((not (or (atom (car form)) (null (car form))))
-                     (or (eq (caar form) 'funarg)
-                         (eq (caar form) 'lambda)))))
-          (apply (car form) (evlist (cdr form) env) env))
+         ((eq exp 't) 't)
+         ((eq exp '()) '())
+         ((atom exp) (assoc exp env))
+         ((or (isSUBR (car exp))
+              (cond ((not (or (atom (car exp)) (null (car exp))))
+                     (or (eq (caar exp) 'funarg)
+                         (eq (caar exp) 'lambda)))))
+          (apply (car exp) (evlist (cdr exp) env) env))
          (t
-          (apply (car form) (cdr form) env)))))
+          (apply (car exp) (cdr exp) env)))))
 
 ; -------------------------------------
 ;; Z-combinator
