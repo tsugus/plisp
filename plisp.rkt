@@ -207,10 +207,9 @@
 ; Add (x . y) to *env*.
 ;
 (define (<< x y)
-  (let ()
-    (set-cdr! *env* (cons (cons x y) (cdr *env*)))
-    (set-cdr! (car *env*) (cdr *env*))
-    x))
+  (set-cdr! *env* (cons (cons x y) (cdr *env*)))
+  (set-cdr! (car *env*) (cdr *env*))
+  x)
 
 ; Eval x on *env*.
 ;
@@ -219,10 +218,9 @@
 ; Reset *env.
 ;
 (define (reset!)
-  (let ()
-    (set-cdr! *env* plisp)
-    (set-cdr! (car *env*) plisp)
-    't))
+  (set-cdr! *env* plisp)
+  (set-cdr! (car *env*) plisp)
+  't)
 
 ; =====================================
 ;; Test 1
