@@ -197,12 +197,12 @@
     (else
      (apply_ (car exp) (cdr exp) env))))
 
-; -------------------------------------
-;; "Pseudo interpretor" functions
+; =====================================
+;; Inner interpretor
 
 ; The global environment list '*env*'
 ;
-(define *env* (cons (cons '*env* plisp) plisp))
+(define *env* (cons (cons '*env* '()) '()))
 
 ; Add (x . y) to *env*.
 ;
@@ -215,119 +215,182 @@
 ;
 (define (>> x) (eval_ x *env*))
 
-; Reset *env.
+; import a environment.
 ;
-(define (reset!)
-  (set-cdr! *env* plisp)
-  (set-cdr! (car *env*) plisp)
+(define (importenv! env)
+  (set-cdr! *env* env)
+  (set-cdr! (car *env*) env)
   't)
 
+; export the environment.
+;
+(define (exportenv!)
+  *env*)
+
+; The top level expression
+;
+(define top-exp '())
+
+; Inner REPL
+;
+(define (repl-body exp)
+  (cond
+    ((pair? exp)
+     (cond
+       ((eq? 'def (car exp))
+        (display (<< (cadr exp) (eval_ (caddr exp) *env*))))
+       (else (display (>> exp)))))
+    (else (display (>> exp))))
+  (newline))
+;
+(define (read-top)
+  (display ">> ")
+  (set! top-exp (read)))
+;
+(define (repl-loop)
+  (repl-body top-exp)
+  (repl))
+;
+(define (repl)
+  (read-top)
+  (cond
+    ((pair? top-exp)
+     (cond
+       ((not (eq? 'exit (car top-exp)))
+        (repl-loop))
+       (else (display ""))))
+    (else (repl-loop))))
+
 ; =====================================
-;; Test 1
-'Test_1
+;; plisp2
 
-(<< 'reverse2
-    '(lambda (x)
-       ((label
-         rec
-         (lambda (x y)
-           (cond ((null x) y)
-                 (t (rec (cdr x) (cons (car x) y))))))
-        x '())))
-(>> '(eval '(reverse2 '(1 2 3 4 5 6 7 8 9 10)) *env*))
-(>> '(eval 'reverse2 *env*))
-(reset!)
-(>> '(eval 'reverse2 *env*))
-(>> '(eval '(cddr '(a b c d e)) *env*))
+(define plisp2
+  '(
+    (caar . (lambda (x) (car (car x))))
+    (cadr . (lambda (x) (car (cdr x))))
+    (cdar . (lambda (x) (cdr (car x))))
+    (cddr . (lambda (x) (cdr (cdr x))))
+    (caaar . (lambda (x) (car (caar x))))
+    (caadr . (lambda (x) (car (cadr x))))
+    (cadar . (lambda (x) (car (cdar x))))
+    (caddr . (lambda (x) (car (cddr x))))
+    (cdaar . (lambda (x) (cdr (caar x))))
+    (cdadr . (lambda (x) (cdr (cadr x))))
+    (cddar . (lambda (x) (cdr (cdar x))))
+    (cdddr . (lambda (x) (cdr (cddr x))))
+    (caddar . (lambda (x) (car (cddar x))))
+    (list
+     . (lambda x x))
+    (null
+     . (lambda (x) (eq x '())))
+    (not
+     . (lambda (x)
+         (cond (x '()) (t 't))))
+    (and
+     . (lambda (x y)
+         (cond (x y) (t '()))))
+    (or
+     . (lambda (x y)
+         (cond (x 't) (t y))))
+    (imply
+     . (lambda (x y)
+         (cond (x y) (t 't))))
+    (rev-append
+     . (lambda (x y)
+         (cond ((null x) y)
+               (t (rev-append (cdr x) (cons (car x) y))))))
+    (reverse
+     . (lambda (x) (rev-append x '())))
+    (append
+     . (lambda (x y) (rev-append (rev-append x '()) y)))
+    (assoclist
+     . (lambda (keys values)
+         (cond ((or (null keys) (null values)) '())
+               ((and (not (atom keys)) (not (atom values)))
+                (cons (cons (car keys) (car values))
+                      (assoclist (cdr keys) (cdr values))))
+               ((not (null keys))
+                (list (cons keys values))))))
+    ; (error
+    ;  . (lambda (err-code s-exp)
+    ;      (Return a nil with outputing an error code and a S-expression.)))
+    (assoc
+     . (lambda (key lst)
+         (cond ((null lst) (error '1 key))
+               ((eq key (caar lst)) (cdar lst))
+               (t (assoc key (cdr lst))))))
+    (isSUBR
+     . (lambda (x)
+         (cond ((eq x 'atom) 't)
+               ((eq x 'eq) 't)
+               ((eq x 'car) 't)
+               ((eq x 'cdr) 't)
+               ((eq x 'cons) 't)
+               ((eq x 'eval) 't)
+               ((eq x 'apply) 't)
+               ((eq x 'error) 't)
+               (t '()))))
+    (evcond
+     . (lambda (clauses env)
+         (cond ((null clauses) '())
+               ((null (eval (caar clauses) env))
+                (evcond (cdr clauses) env))
+               (t (eval (cadar clauses) env)))))
+    (evlist
+     . (lambda (members env)
+         (cond ((null members) '())
+               (t (cons (eval (car members) env)
+                        (evlist (cdr members) env))))))
+    (apply
+     . (lambda (func args env)
+         (cond
+           ((and (atom func) (not (null func)))
+            (cond
+              ((eq func 'quote) (car args))
+              ((eq func 'atom) (cond ((atom (car args)) 't)
+                                     (t '())))
+              ((eq func 'eq) (cond
+                               ((eq (car args) (cadr args)) 't)
+                               (t '())))
+              ((eq func 'car) (car (car args)))
+              ((eq func 'cdr) (cdr (car args)))
+              ((eq func 'cons) (cons (car args) (cadr args)))
+              ((eq func 'cond) (evcond args env))
+              ((eq func 'eval) (eval (car args) (cadr args)))
+              ((eq func 'apply) (apply (car args) (cadr args) env))
+              ((eq func 'function) (list 'funarg (car args) env))
+              ((eq func 'funarg) (cons func args))
+              ((eq func 'error) (error (car args) (cadr args)))
+              (t (eval (cons (assoc func env) args) env))))
+           ((eq (car func) 'label)
+            (eval (cons (caddr func) args)
+                  (cons (cons (cadr func) (caddr func)) env)))
+           ((eq (car func) 'funarg)
+            (apply (cadr func) args (caddr func)))
+           ((eq (car func) 'lambda)
+            (eval (caddr func)
+                  (append (assoclist (cadr func) args) env)))
+           (t (error '2 (cons func args))))))
+    (eval
+     . (lambda (exp env)
+         (cond
+           ((eq exp 't) 't)
+           ((eq exp '()) '())
+           ((atom exp) (assoc exp env))
+           ((or (isSUBR (car exp))
+                (cond ((not (or (atom (car exp)) (null (car exp))))
+                       (or (eq (caar exp) 'funarg)
+                           (eq (caar exp) 'lambda)))))
+            (apply (car exp) (evlist (cdr exp) env) env))
+           (t
+            (apply (car exp) (cdr exp) env)))))
+    (funcall
+     . (lambda (f . x) (apply f x)))
+    (z-combi  ; Z-combinator
+     . (lambda (f)
+         (funcall
+          (function (lambda (y) (f (function (lambda x (apply (y y) x))))))
+          (function (lambda (y) (f (function (lambda x (apply (y y) x)))))))))
+    ))
 
 ; -------------------------------------
-;; Redefine
-
-(<< 'isSUBR
-    '(lambda (x)
-       (cond ((eq x 'atom) 't)
-             ((eq x 'eq) 't)
-             ((eq x 'car) 't)
-             ((eq x 'cdr) 't)
-             ((eq x 'cons) 't)
-             ((eq x 'eval) 't)
-             ((eq x 'apply) 't)
-             ((eq x 'error) 't)
-             (t '()))))
-
-(<< 'apply
-    '(lambda (func args env)
-       (cond
-         ((and (atom func) (not (null func)))
-          (cond
-            ((eq func 'quote) (car args))
-            ((eq func 'atom) (cond ((atom (car args)) 't)
-                                   (t '())))
-            ((eq func 'eq) (cond
-                             ((eq (car args) (cadr args)) 't)
-                             (t '())))
-            ((eq func 'car) (car (car args)))
-            ((eq func 'cdr) (cdr (car args)))
-            ((eq func 'cons) (cons (car args) (cadr args)))
-            ((eq func 'cond) (evcond args env))
-            ((eq func 'eval) (eval (car args) (cadr args)))
-            ((eq func 'apply) (apply (car args) (cadr args) env))
-            ((eq func 'function) (list 'funarg (car args) env))
-            ((eq func 'funarg) (cons func args))
-            ((eq func 'error) (error (car args) (cadr args)))
-            (t (eval (cons (assoc func env) args) env))))
-         ((eq (car func) 'label)
-          (eval (cons (caddr func) args)
-                (cons (cons (cadr func) (caddr func)) env)))
-         ((eq (car func) 'funarg)
-          (apply (cadr func) args (caddr func)))
-         ((eq (car func) 'lambda)
-          (eval (caddr func)
-                (append (assoclist (cadr func) args) env)))
-         (t (error '2 (cons func args))))))
-
-(<< 'eval
-    '(lambda (exp env)
-       (cond
-         ((eq exp 't) 't)
-         ((eq exp '()) '())
-         ((atom exp) (assoc exp env))
-         ((or (isSUBR (car exp))
-              (cond ((not (or (atom (car exp)) (null (car exp))))
-                     (or (eq (caar exp) 'funarg)
-                         (eq (caar exp) 'lambda)))))
-          (apply (car exp) (evlist (cdr exp) env) env))
-         (t
-          (apply (car exp) (cdr exp) env)))))
-
-; -------------------------------------
-;; Z-combinator
-
-(<< 'funcall
-    '(lambda (f . x) (apply f x)))
-
-(<< 'z-combi
-    '(lambda (f)
-       (funcall
-        (function (lambda (y) (f (function (lambda x (apply (y y) x))))))
-        (function (lambda (y) (f (function (lambda x (apply (y y) x)))))))))
-
-; -------------------------------------
-;; Test 2
-'Test_2
-
-(<< 'reverse_z
-    '(lambda (l)
-       (funcall
-        (z-combi
-         (function (lambda (f)
-                     (function (lambda (l acc)
-                                 (cond
-                                   ((eq '() l) acc)
-                                   (t (f (cdr l)
-                                         (cons (car l) acc)))))))))
-        l '())))
-(>> '(eval '(reverse_z '(1 2 3 4 5 6 7 8 9 10)) *env*))
-
-; -------------------------------------
-(reset!)
