@@ -237,6 +237,10 @@
   (cond
     ((pair? exp)
      (cond
+       ((eq? 'importenv (car exp))
+        (display (importenv! (eval (cadr exp) (interaction-environment)))))
+       ((eq? 'exportenv (car exp))
+        (display (exportenv!)))
        ((eq? 'def (car exp))
         (display (<< (cadr exp) (eval_ (caddr exp) *env*))))
        (else (display (>> exp)))))
