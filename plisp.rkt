@@ -185,7 +185,7 @@
      (eval_ (caddr func)
             (append (assoclist (cadr func) (evlist args env))
                     env)))
-    (eval (error '2 (cons func args)))))
+    (else (error '2 (cons func args)))))
 
 (define (eval_ exp env)
   (cond
