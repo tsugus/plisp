@@ -41,22 +41,22 @@
      . (lambda (x) (rev-append x '())))
     (append
      . (lambda (x y) (rev-append (rev-append x '()) y)))
-    (assoclist
+    (assoclist__
      . (lambda (keys values)
          (cond ((or (null keys) (null values)) '())
                ((and (not (atom keys)) (not (atom values)))
                 (cons (cons (car keys) (car values))
-                      (assoclist (cdr keys) (cdr values))))
+                      (assoclist__ (cdr keys) (cdr values))))
                ((not (null keys))
                 (list (cons keys values))))))
     ; (error
     ;  . (lambda (err-code s-exp)
     ;      (Return a nil with outputing an error code and a S-expression.)))
-    (assoc
+    (assocv
      . (lambda (key lst)
          (cond ((null lst) (error '1 key))
                ((eq key (caar lst)) (cdar lst))
-               (t (assoc key (cdr lst))))))
+               (t (assocv key (cdr lst))))))
     (isSUBR
      . (lambda (x)
          (cond ((eq x 'atom) 't)
@@ -93,13 +93,13 @@
               ((eq func 'cons) (cons (car args) (cadr args)))
               ((eq func 'cond) (evcond args env))
               ((eq func 'error) (error (car args) (cadr args)))
-              (t (eval (cons (assoc func env) args) env))))
+              (t (eval (cons (assocv func env) args) env))))
            ((eq (car func) 'label)
             (eval (cons (caddr func) args)
                   (cons (cons (cadr func) (caddr func)) env)))
            ((eq (car func) 'lambda)
             (eval (caddr func)
-                  (append (assoclist (cadr func) (evlist args env))
+                  (append (assoclist__ (cadr func) (evlist args env))
                           env)))
            (t (error '2 (cons func args))))))
     (eval
@@ -107,7 +107,7 @@
          (cond
            ((eq exp 't) 't)
            ((eq exp '()) '())
-           ((atom exp) (assoc exp env))
+           ((atom exp) (assocv exp env))
            ((isSUBR (car exp))
             (apply (car exp) (evlist (cdr exp) env) env))
            (t
@@ -119,11 +119,11 @@
 
 (define (atom? x) (not (pair? x)))
 
-(define (assoclist keys values)
+(define (assoclist__ keys values)
   (cond ((or (null? keys) (null? values)) '())
         ((and (not (atom? keys)) (not (atom? values)))
          (cons (cons (car keys) (car values))
-               (assoclist (cdr keys) (cdr values))))
+               (assoclist__ (cdr keys) (cdr values))))
         ((not (null? keys))
          (list (cons keys values)))))
 
@@ -183,7 +183,7 @@
             (cons (cons (cadr func) (caddr func)) env)))
     ((eq? (car func) 'lambda)
      (eval_ (caddr func)
-            (append (assoclist (cadr func) (evlist args env))
+            (append (assoclist__ (cadr func) (evlist args env))
                     env)))
     (else (error '2 (cons func args)))))
 
@@ -307,22 +307,22 @@
      . (lambda (x) (rev-append x '())))
     (append
      . (lambda (x y) (rev-append (rev-append x '()) y)))
-    (assoclist
+    (assoclist__
      . (lambda (keys values)
          (cond ((or (null keys) (null values)) '())
                ((and (not (atom keys)) (not (atom values)))
                 (cons (cons (car keys) (car values))
-                      (assoclist (cdr keys) (cdr values))))
+                      (assoclist__ (cdr keys) (cdr values))))
                ((not (null keys))
                 (list (cons keys values))))))
     ; (error
     ;  . (lambda (err-code s-exp)
     ;      (Return a nil with outputing an error code and a S-expression.)))
-    (assoc
+    (assocv
      . (lambda (key lst)
          (cond ((null lst) (error '1 key))
                ((eq key (caar lst)) (cdar lst))
-               (t (assoc key (cdr lst))))))
+               (t (assocv key (cdr lst))))))
     (isSUBR
      . (lambda (x)
          (cond ((eq x 'atom) 't)
@@ -365,7 +365,7 @@
               ((eq func 'function) (list 'funarg (car args) env))
               ((eq func 'funarg) (cons func args))
               ((eq func 'error) (error (car args) (cadr args)))
-              (t (eval (cons (assoc func env) args) env))))
+              (t (eval (cons (assocv func env) args) env))))
            ((eq (car func) 'label)
             (eval (cons (caddr func) args)
                   (cons (cons (cadr func) (caddr func)) env)))
@@ -373,14 +373,14 @@
             (apply (cadr func) args (caddr func)))
            ((eq (car func) 'lambda)
             (eval (caddr func)
-                  (append (assoclist (cadr func) args) env)))
+                  (append (assoclist__ (cadr func) args) env)))
            (t (error '2 (cons func args))))))
     (eval
      . (lambda (exp env)
          (cond
            ((eq exp 't) 't)
            ((eq exp '()) '())
-           ((atom exp) (assoc exp env))
+           ((atom exp) (assocv exp env))
            ((or (isSUBR (car exp))
                 (cond ((not (or (atom (car exp)) (null (car exp))))
                        (or (eq (caar exp) 'funarg)
