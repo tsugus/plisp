@@ -198,7 +198,7 @@
      (apply_ (car exp) (cdr exp) env))))
 
 ; =====================================
-;; Inner interpretor
+;; Virtual REPL
 
 ; The global environment list '*env*'
 ;
@@ -211,7 +211,7 @@
   (set-cdr! (car *env*) (cdr *env*))
   x)
 
-; Eval x on *env*.
+; Eval x on the environment *env*.
 ;
 (define (>> x) (eval_ x *env*))
 
@@ -222,16 +222,22 @@
   (set-cdr! (car *env*) env)
   't)
 
-; export the environment.
+; export the environment "*env*.
 ;
 (define (exportenv!)
   *env*)
+
+; Reset the environment "*env*".
+;
+(define (resetenv!)
+  (set! *env* (cons (cons '*env* '()) '()))
+  't)
 
 ; The top level expression
 ;
 (define top-exp '())
 
-; Inner REPL
+; Virtual REPL
 ;
 (define (repl-body exp)
   (cond
@@ -241,6 +247,8 @@
         (display (importenv! (eval (cadr exp) (interaction-environment)))))
        ((eq? 'exportenv (car exp))
         (display (exportenv!)))
+       ((eq? 'resetenv (car exp))
+        (display (resetenv!)))
        ((eq? 'def (car exp))
         (display (<< (cadr exp) (eval_ (caddr exp) *env*))))
        (else (display (>> exp)))))
