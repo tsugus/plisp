@@ -202,7 +202,7 @@
 
 ; The global environment list '*env*'
 ;
-(define *env* (cons (cons '*env* '()) '()))
+(define *env* '((*env*)))
 
 ; Add (x . y) to *env*.
 ;
@@ -230,7 +230,9 @@
 ; Reset the environment "*env*".
 ;
 (define (resetenv!)
-  (set! *env* (cons (cons '*env* '()) '()))
+  (set!
+   *env*
+   (cons (cons '*env* '()) '()))  ; '((*env*)) won't work.
   't)
 
 ; The top level expression
