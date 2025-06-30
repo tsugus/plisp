@@ -213,20 +213,33 @@
      (label IS_ATOM?)          ; [exp env]
      (dup)                     ; [exp exp env]
      (dpush (atom? (dpop)))    ; [(atom? exp) exp env]
-     (branch 'ATOM 'IS_SUBR?)  ; [exp env]
+     (branch 'ATOM
+             'IS_SUBR/EXPR?)   ; [exp env]
 
      (label ATOM)              ; [exp env]
      (dpush
       (assocv (dpop) (dpop)))  ; [(assocv exp env)]
      (return)
 
-     (label IS_SUBR?)          ; [exp env]
+     (label IS_SUBR/EXPR?)     ; [exp env]
      (dup)                     ; [exp exp env]
      (dpush
-      (isSUBR? (car (dpop))))  ; [(isSUBR? (car exp)) exp env]
-     (branch 'SUBR 'OTHERS)    ; [exp env]
+      (let ((exp (dpop)))
+        (or                    ; [(or
+         (isSUBR?              ;   (isSUBR?
+          (car exp))           ;    (car exp))
+         (and                  ;   (and
+          (not                 ;    (not
+           (or                 ;     (or
+            (atom? (car exp))  ;      (atom? (car exp))
+            (null?             ;      (null?
+             (car exp))))      ;       (car exp))))
+          (eq? (caar exp)      ;    (eq? (caar exp)
+               'lambda)))))    ;         'lambda))) exp env]
+     (branch 'SUBR/EXPR
+             'OTHERS)          ; [exp env]
 
-     (label SUBR)              ; [exp env]
+     (label SUBR/EXPR)         ; [exp env]
      (over)                    ; [env exp env]
      (over)                    ; [exp env exp env]
      (dpush (cdr (dpop)))      ; [(cdr exp) env exp env]
@@ -250,13 +263,12 @@
   (prog<-flow
    '((label START)    ; dstack = [func args env]
      (dup)                     ; [func func args env]
-     (dup)                     ; [func func func args env]
      (dpush
-      (let ((x (dpop))
-            (y (dpop)))        ; Support a special form "and".
+      (let ((func (dpop)))     ; Support a special form "and".
         (and
-         (atom? x)
-         (not (null? y)))))    ; [(and (atom? func) (not (null? func))) func args env]
+         (atom? func)
+         (not
+          (null? func)))))     ; [(and (atom? func) (not (null? func))) func args env]
      (branch 'IS_QUOTE?
              'IS_LABEL?)       ; [func args env]
 
@@ -444,24 +456,15 @@
      (rpush (dpop))            ; [func args env]
      (rot)                     ; [env func args]
      (rot)                     ; [args env func]
-     (over)                    ; [env args env func]
-     (swap)                    ; [args env env func]
-     (dpush (rpop))            ; [func args env env func]
-     (rot)                     ; [env func args env func]
-     (rot)                     ; [args env func env func]
-     (call 'evlist__
-           'LAMBDA_2)          ; [(evlist args env) func env func]
-
-     (label LAMBDA_2)          ; [(evlist args env) func env func]
-     (swap)                    ; [func (evlist args env) env func]
+     (dpush (rpop))            ; [func args env func]
      (dpush
       (append
        (assoclist
         (cadr (dpop)) (dpop))
-       (dpop)))                ; [(append (assoclist (cadr func) (evlist args env)) env) func]
-     (swap)                    ; [func (append (assoclist (cadr func) (evlist args env)) env)]
-     (dpush (caddr (dpop)))    ; [(caddr func) (append (assoclist (cadr func) (evlist args env)) env)]
-     (jump 'eval__)            ; [(eval (caddr func) (append (assoclist (cadr func) (evlist args env)) env))]
+       (dpop)))                ; [(append (assoclist (cadr func) args) env) func]
+     (swap)                    ; [func (append (assoclist (cadr func) args) env)]
+     (dpush (caddr (dpop)))    ; [(caddr func) (append (assoclist (cadr func) args) env)]
+     (jump 'eval__)            ; [(eval (caddr func) (append (assoclist (cadr func) args) env))]
 
      (label OTHER_FORM)        ; [func args env]
      (dpush
