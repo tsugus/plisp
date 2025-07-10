@@ -185,6 +185,8 @@
 
 ; =====================================
 ;; Pure LISP Interpreter for Stack and GOTO System
+; Note!
+; Assume that the order of evaluation of arguments in a Scheme interpretor is left to right.
 
 (define eval__
   (prog<-flow
