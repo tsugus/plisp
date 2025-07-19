@@ -16,7 +16,6 @@
     (cdadr . (lambda (x) (cdr (cadr x))))
     (cddar . (lambda (x) (cdr (cdar x))))
     (cdddr . (lambda (x) (cdr (cddr x))))
-    (caddar . (lambda (x) (car (cddar x))))
     (list
      . (lambda x x))
     (null
@@ -30,20 +29,15 @@
     (or
      . (lambda (x y)
          (cond (x 't) (t y))))
-    (imply
-     . (lambda (x y)
-         (cond (x y) (t 't))))
     (rev-append
      . (lambda (x y)
          (cond ((null x) y)
                (t (rev-append (cdr x) (cons (car x) y))))))
-    (reverse
-     . (lambda (x) (rev-append x '())))
     (append
      . (lambda (x y) (rev-append (rev-append x '()) y)))
     (assoclist
      . (lambda (keys values)
-         (cond ((or (null keys) (null values)) '())
+         (cond ((null keys) '())
                ((and (not (atom keys)) (not (atom values)))
                 (cons (cons (car keys) (car values))
                       (assoclist (cdr keys) (cdr values))))
@@ -121,8 +115,8 @@
 (define (atom? x) (not (pair? x)))
 
 (define (assoclist keys values)
-  (cond ((or (null? keys) (null? values)) '())
-        ((and (not (atom? keys)) (not (atom? values)))
+  (cond ((null? keys) '())
+        ((and (pair? keys) (pair? values))
          (cons (cons (car keys) (car values))
                (assoclist (cdr keys) (cdr values))))
         ((not (null? keys))
@@ -137,10 +131,10 @@
   (newline)
   '())
 
-(define (assoc_ key lst)
+(define (assocv key lst)
   (cond ((null? lst) (error '1 key))
         ((eq? key (caar lst)) (cdar lst))
-        (else (assoc_ key (cdr lst)))))
+        (else (assocv key (cdr lst)))))
 
 (define (isSUBR? x)
   (cond ((eq? x 'atom) #t)
@@ -178,7 +172,7 @@
        ((eq? func 'cons) (cons (car args) (cadr args)))
        ((eq? func 'cond) (evcond args env))
        ((eq? func 'error) (error (car args) (cadr args)))
-       (else (eval_ (cons (assoc_ func env) args) env))))
+       (else (eval_ (cons (assocv func env) args) env))))
     ((eq? (car func) 'label)
      (eval_ (cons (caddr func) args)
             (cons (cons (cadr func) (caddr func)) env)))
@@ -191,7 +185,7 @@
   (cond
     ((eq? exp 't) 't)
     ((eq? exp '()) '())
-    ((atom? exp) (assoc_ exp env))
+    ((atom? exp) (assocv exp env))
     ((or (isSUBR? (car exp))
          (and (not (or (atom? (car exp)) (null? (car exp))))
               (eq? (caar exp) 'lambda)))
@@ -293,7 +287,6 @@
     (cdadr . (lambda (x) (cdr (cadr x))))
     (cddar . (lambda (x) (cdr (cdar x))))
     (cdddr . (lambda (x) (cdr (cddr x))))
-    (caddar . (lambda (x) (car (cddar x))))
     (list
      . (lambda x x))
     (null
@@ -307,15 +300,10 @@
     (or
      . (lambda (x y)
          (cond (x 't) (t y))))
-    (imply
-     . (lambda (x y)
-         (cond (x y) (t 't))))
     (rev-append
      . (lambda (x y)
          (cond ((null x) y)
                (t (rev-append (cdr x) (cons (car x) y))))))
-    (reverse
-     . (lambda (x) (rev-append x '())))
     (append
      . (lambda (x y) (rev-append (rev-append x '()) y)))
     (assoclist

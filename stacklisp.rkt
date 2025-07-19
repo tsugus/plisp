@@ -5,8 +5,8 @@
 (define (atom? x) (not (pair? x)))
 
 (define (assoclist keys values)
-  (cond ((or (null? keys) (null? values)) '())
-        ((and (not (atom? keys)) (not (atom? values)))
+  (cond ((null? keys) '())
+        ((and (pair? keys) (pair? values))
          (cons (cons (car keys) (car values))
                (assoclist (cdr keys) (cdr values))))
         ((not (null? keys))
